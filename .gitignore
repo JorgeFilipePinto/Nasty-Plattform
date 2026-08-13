@@ -67,3 +67,56 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# ===== Java / Spring Boot (Api/) =====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# Maven
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ===== Node / Angular (Platform/) =====
+node_modules/
+dist/
+.angular/
+out-tsc/
+bower_components/
+coverage/
+.tmp/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# ===== IDE / OS =====
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ===== Logs / misc =====
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
