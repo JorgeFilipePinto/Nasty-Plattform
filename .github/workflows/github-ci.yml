@@ -105,7 +105,14 @@ jobs:
         shell: bash
         run: |
           . $IDF_PATH/export.sh
-          idf.py build
+          idf.py build 2>&1 | tee /tmp/firmware-build.log
+
+      - name: Publicar log do build (diagnóstico)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-build-log
+          path: /tmp/firmware-build.log
 
       - name: Publicar binário
         uses: actions/upload-artifact@v4
