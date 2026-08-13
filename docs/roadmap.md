@@ -54,12 +54,12 @@ gh release create v1.0.0 --title "Fase 1: ESP32 → HTTP" --notes "O que foi ent
 **Objetivo:** firmware ESP32 lendo um sensor e enviando `POST` HTTP com JSON.
 
 **Tasks:**
-- [ ] Criar projeto ESP-IDF em `Esp32/`.
-- [ ] Configurar Wi-Fi (SSID/senha via menuconfig ou constantes).
-- [ ] Implementar leitura do sensor (ex.: temperatura/umidade).
-- [ ] Implementar cliente HTTP montando payload JSON.
-- [ ] Enviar `POST` para a API em intervalo definido.
-- [ ] Validar envio com `idf.py flash monitor`.
+- [x] Criar projeto ESP-IDF em `Esp32/`.
+- [x] Configurar Wi-Fi (SSID/senha via `idf.py menuconfig`).
+- [x] Implementar leitura do sensor de temperatura interno do chip.
+- [x] Implementar cliente HTTP montando payload JSON.
+- [x] Enviar `POST` para a API em intervalo definido (endpoint configurável).
+- [ ] Validar o envio apontando o endpoint para o mock local (`Deployment/Local/mock_api.py`) com `idf.py flash monitor`.
 
 **Release:** `v1.0.0`
 

@@ -1,0 +1,24 @@
+menu "Nasty Platform"
+
+    config NASTY_WIFI_SSID
+        string "Wi-Fi SSID"
+        default "NastyWifi"
+
+    config NASTY_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default "changeme"
+
+    config NASTY_DEVICE_ID
+        string "Device ID sent in the JSON payload"
+        default "esp32-001"
+
+    config NASTY_API_ENDPOINT
+        string "API endpoint that receives the POST"
+        default "http://192.168.1.100:8080/readings"
+
+    config NASTY_POST_INTERVAL_SECONDS
+        int "Interval between readings (seconds)"
+        default 10
+        range 1 3600
+
+endmenu

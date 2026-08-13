@@ -91,6 +91,13 @@ idf.py menuconfig
 **Convenções:**
 - Mantenha o diretório `Esp32/` como raiz do projeto ESP-IDF, sem arquivos gerados na raiz do repo.
 - Toda comunicação com a API deve ter o payload JSON documentado (endpoint, campos, tipos).
+- Configuração via `idf.py menuconfig` (Wi-Fi, device ID, endpoint, intervalo).
+- **Enquanto a API (Fase 2) não existir**, valide o POST com o mock local:
+
+  ```bash
+  python3 Deployment/Local/mock_api.py 8080
+  # e aponte o endpoint no menuconfig para http://<IP-do-pc>:8080/readings
+  ```
 
 ### Api/
 
