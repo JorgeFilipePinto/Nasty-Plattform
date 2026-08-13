@@ -68,6 +68,15 @@ vcpkg_installed/
 Testing/
 .cache/
 
+# ===== ESP-IDF (Esp32/) =====
+sdkconfig
+sdkconfig.old
+managed_components/
+.clangd
+.cproject
+.project
+.settings/
+
 # ===== Java / Spring Boot (Api/) =====
 target/
 *.class
