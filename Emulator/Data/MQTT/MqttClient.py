@@ -5,7 +5,7 @@ class MqttClient:
         self.broker_address = broker_address
         self.broker_port = broker_port
         self.client_id = client_id
-        self.client = mqtt.Client(client_id)
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id)
         self.connect()
         self.subscribe("nasty")
 
