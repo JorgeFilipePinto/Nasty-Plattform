@@ -1,4 +1,8 @@
+import logging
 import paho.mqtt.client as mqtt
+
+logger = logging.getLogger(__name__)
+
 
 class MqttClient:
     def __init__(self, broker_address, client_id, broker_port=1883):
@@ -10,12 +14,14 @@ class MqttClient:
         self.subscribe("nasty")
 
     def connect(self):
+        logger.info("Connecting to broker %s:%s", self.broker_address, self.broker_port)
         self.client.connect(self.broker_address, self.broker_port)
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)
 
     def subscribe(self, topic):
+        logger.debug("Subscribing to topic %s", topic)
         self.client.subscribe(topic)
 
     def set_on_message_callback(self, callback):
