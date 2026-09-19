@@ -1,0 +1,8 @@
+# Config mínima — expandir quando a Api/Ingestion expuserem métricas (Fase 9).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

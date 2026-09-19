@@ -100,6 +100,16 @@ release.properties
 .gradle/
 !gradle/wrapper/gradle-wrapper.jar
 
+# ===== Go (Ingestion/) =====
+/Ingestion/bin/
+*.test
+vendor/
+
+# SQLite local buffer databases
+*.sqlite
+*.sqlite3
+*.db
+
 # ===== Node / Angular (Platform/) =====
 node_modules/
 dist/
@@ -121,6 +131,9 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Obsidian vault local state (Vault/)
+.obsidian/
 
 # ===== Logs / misc =====
 npm-debug.log*

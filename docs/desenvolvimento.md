@@ -19,16 +19,17 @@ Guia de referência para quem for trabalhar neste repositório. Cobre pré-requi
 
 ## Visão geral
 
-Plataforma IoT de aprendizado com quatro partes:
+Plataforma IoT de aprendizado com cinco partes:
 
 | Pasta | Componente | Stack |
 |---|---|---|
-| `Esp32/` | Firmware do dispositivo | ESP-IDF (C/C++/CMake) |
-| `Api/` | Backend | Spring Boot (Java) |
+| `Esp32/` | Firmware do dispositivo (N devices) | ESP-IDF (C/C++/CMake) |
+| `Ingestion/` | Serviço de ingestão MQTT → SQLite → forward (planeado) | Go |
+| `Api/` | Backend (a migrar de Spring Boot para Quarkus) | Quarkus (Java), Postgres, ClickHouse |
 | `Platform/` | Dashboard | Angular |
 | `Deployment/` | Infra local | Docker Compose |
 
-O roadmap em fases está no `README.md`. Trabalhe nas fases em ordem — cada uma depende da anterior.
+A arquitetura completa e o roadmap em fases estão no vault Obsidian: `Vault/00 - Home.md`. Trabalhe nas fases em ordem — cada uma depende da anterior.
 
 ---
 
@@ -60,8 +61,8 @@ O roadmap em fases está no `README.md`. Trabalhe nas fases em ordem — cada um
 
 ```bash
 # 1. Clone e instale as ferramentas do stack desejado (ver Pré-requisitos)
-# 2. Suba os serviços de infraestrutura:
-docker compose -f Deployment/Local/docker-compose.yaml up -d
+# 2. Suba os serviços de infraestrutura (ver Deployment/Local/README.md para os profiles disponíveis):
+docker compose -f Deployment/Local/docker-compose.yaml --profile full up -d
 
 # 3. Configure cada componente (ver abaixo)
 ```
@@ -94,13 +95,13 @@ idf.py menuconfig
 
 ### Api/
 
-Backend Spring Boot. Estrutura padrão do Maven: `src/main/java`, `src/main/resources`, `src/test/java`.
+Backend Quarkus (a migrar de Spring Boot — ver `Vault/02 - Roadmap/Fase 4 - API Quarkus.md`). Estrutura padrão do Maven: `src/main/java`, `src/main/resources`, `src/test/java`.
 
 ```bash
-# Rodar a aplicação
-mvn spring-boot:run
-# ou, com o wrapper
-./mvnw spring-boot:run
+# Modo de desenvolvimento (live reload)
+./mvnw quarkus:dev
+# ou, sem o wrapper
+mvn quarkus:dev
 
 # Rodar apenas um teste
 mvn test -Dtest=NomeDaClasseTest
@@ -114,9 +115,29 @@ mvn clean package
 
 **Convenções:**
 - Endpoints REST com validação de entrada (`@Valid` + `jakarta.validation`).
-- Postgres usado para o *last value*; migrations versionadas (Flyway/Liquibase) quando forem introduzidas.
-- Novos endpoints devem vir acompanhados de testes.
-- Fases avançadas: SSE/WebSocket e Actuator + Prometheus.
+- Postgres para o *last value*, ClickHouse para o histórico; migrations versionadas (Flyway) para o Postgres.
+- Novos endpoints devem vir acompanhados de testes (`@QuarkusTest`).
+- Fases avançadas: SSE/WebSocket e `quarkus-micrometer-registry-prometheus`.
+- Recebe leituras do `Ingestion/` via `POST /readings` — ver o contrato em `Vault/01 - Arquitetura/Contrato de Dados.md`.
+
+### Ingestion/ (planeado)
+
+Serviço em Go: subscreve o broker MQTT, valida/normaliza as leituras, grava-as em SQLite local e encaminha-as para a `Api/`. Ver `Vault/03 - Componentes/Ingestion Service (Go).md`.
+
+```bash
+# Dentro de Ingestion/, após o módulo Go existir:
+go run ./cmd/ingestion
+
+# Testes
+go test ./...
+
+# Build
+go build ./...
+```
+
+**Convenções:**
+- Subscriber/Storage/Forwarder como interfaces (ports & adapters) — ver `Vault/04 - Conceitos/Ports and Adapters (Arquitetura Hexagonal).md`.
+- Toda leitura é gravada em SQLite antes de ser encaminhada; nunca encaminhar sem persistir primeiro.
 
 ### Platform/
 
@@ -146,13 +167,17 @@ ng lint
 
 ### Deployment/Local/
 
-`docker-compose.yaml` centraliza os serviços locais. Adicione aqui: Postgres, broker MQTT (ex.: Mosquitto), ClickHouse e Prometheus à medida que as fases avançadas entrarem.
+`docker-compose.yaml` centraliza os serviços locais. Adicione aqui, na ordem das fases (ver `Vault/03 - Componentes/Deployment (Docker Compose).md`): broker MQTT (Mosquitto), Postgres, ClickHouse e Prometheus/Grafana.
 
 ```bash
-docker compose -f Deployment/Local/docker-compose.yaml up -d   # subir
-docker compose -f Deployment/Local/docker-compose.yaml down     # derrubar
-docker compose -f Deployment/Local/docker-compose.yaml logs -f  # logs
+docker compose -f Deployment/Local/docker-compose.yaml --profile full up -d   # subir
+docker compose -f Deployment/Local/docker-compose.yaml --profile full down     # derrubar
+docker compose -f Deployment/Local/docker-compose.yaml logs -f                 # logs
 ```
+
+Ver [`Deployment/Local/README.md`](../Deployment/Local/README.md) para a
+lista de containers, o que cada um faz, e os profiles para subir só o
+que precisas em cada fase.
 
 ---
 
@@ -172,6 +197,7 @@ docker compose -f Deployment/Local/docker-compose.yaml logs -f  # logs
 | Componente | Comando esperado |
 |---|---|
 | Api | `mvn test` (testes), checkstyle/spotless se configurado |
+| Ingestion | `go test ./...`, `go vet ./...` |
 | Platform | `ng lint` e `ng test` |
 | Esp32 | build do ESP-IDF (`idf.py build`) |
 
@@ -183,11 +209,12 @@ docker compose -f Deployment/Local/docker-compose.yaml logs -f  # logs
 
 Ordem típica durante o desenvolvimento (exemplo com Docker Compose):
 
-1. Suba a infra: `docker compose -f Deployment/Local/docker-compose.yaml up -d`.
-2. Rode a API em `Api/` (`mvn spring-boot:run`).
-3. Rode o Angular em `Platform/` (`ng serve`).
-4. Flash o firmware no ESP32 (`idf.py flash monitor`).
-5. Valide o fluxo: o sensor publica → API ingere → dashboard exibe.
+1. Suba a infra: `docker compose -f Deployment/Local/docker-compose.yaml --profile full up -d` (Mosquitto, Postgres, ClickHouse, Prometheus, Grafana).
+2. Rode a API em `Api/` (`./mvnw quarkus:dev`).
+3. Rode o Ingestion Service em `Ingestion/` (`go run ./cmd/ingestion`).
+4. Rode o Angular em `Platform/` (`ng serve`).
+5. Flash o firmware no ESP32 (`idf.py flash monitor`).
+6. Valide o fluxo: o sensor publica em MQTT → Ingestion grava/encaminha → API ingere → dashboard exibe.
 
 ---
 
@@ -196,5 +223,7 @@ Ordem típica durante o desenvolvimento (exemplo com Docker Compose):
 - `README.md` — visão geral, arquitetura, fases de estudo e stack.
 - `AGENTS.md` — orientações para sessões de IA/OpenCode no repo (leia antes de codar).
 - `docs/desenvolvimento.md` — este guia.
-- `docs/roadmap.md` — fases, tasks, critérios de aceite e convenção de releases/tags.
+- `docs/roadmap.md` — convenção de releases/tags (o detalhe das fases mudou-se para o vault).
+- `Vault/00 - Home.md` — vault Obsidian com a arquitetura, o roadmap detalhado e as tasks por componente. **Fonte da verdade da arquitetura atual.**
 - `Deployment/Local/docker-compose.yaml` — serviços de infraestrutura.
+- `Deployment/Local/README.md` — o que é cada container, links para a documentação oficial, explicação do Docker Compose e instruções de setup.

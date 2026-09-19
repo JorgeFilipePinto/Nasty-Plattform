@@ -1,0 +1,82 @@
+# Infraestrutura local do Nasty-Plattform.
+# Ver Deployment/Local/README.md para explicação de cada serviço, links
+# para a documentação oficial e instruções de utilização.
+#
+# Os serviços estão agrupados por "profile" para poderes subir apenas o
+# que precisas na fase em que estás (ver README). Sem `--profile`, nenhum
+# serviço sobe — isto é intencional, para não obrigar a correr ClickHouse
+# ou Grafana antes de precisares deles.
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: nasty-mosquitto
+    profiles: ["mqtt", "full"]
+    ports:
+      - "1883:1883"   # MQTT
+      - "9001:9001"   # MQTT sobre WebSockets (útil para debugar no browser)
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: nasty-postgres
+    profiles: ["postgres", "full"]
+    environment:
+      POSTGRES_DB: nasty
+      POSTGRES_USER: nasty
+      POSTGRES_PASSWORD: nasty
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    container_name: nasty-clickhouse
+    profiles: ["clickhouse", "full"]
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000:9000"   # native client
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nasty-prometheus
+    profiles: ["observability", "full"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nasty-grafana
+    profiles: ["observability", "full"]
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  postgres_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:
